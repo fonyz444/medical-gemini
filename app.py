@@ -7,10 +7,8 @@ import google.generativeai as genai
 import tempfile
 import PIL.Image
 
-# Загрузка переменных окружения
 load_dotenv()
 
-# Настройка API Google Generative AI
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     st.error("🔑 API-ключ Gemini не найден. Проверьте файл .env с переменной GOOGLE_API_KEY")
@@ -35,7 +33,7 @@ sample_prompt = """Ты — практикующий врач и эксперт 
 5) Отказ от ответственности — в конце обязательно добавь: «Проконсультируйтесь с врачом, прежде чем принимать какие-либо решения».
 6) Если невозможно интерпретировать — честно укажи: «Невозможно определить на основе предоставленного изображения»."""
 
-# Инициализация переменных состояния сессии
+
 if 'uploaded_file' not in st.session_state:
     st.session_state.uploaded_file = None
 if 'result' not in st.session_state:
@@ -44,19 +42,17 @@ if 'result' not in st.session_state:
 def call_gemini_for_analysis(image_path, prompt=sample_prompt):
     """Функция для анализа изображения с помощью Gemini"""
     try:
-        # Загрузка изображения
+
         image = PIL.Image.open(image_path)
-        
-        # Попробуем использовать gemini-1.0-pro-vision или другую доступную модель
-        # если превышена квота для gemini-1.5-pro
+
         try:
-            # Сначала пробуем с gemini-1.5-flash
+
             model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content([prompt, image])
             return response.text
         except Exception as e:
             if "429" in str(e) or "quota" in str(e).lower():
-                # Если квота превышена, пробуем более старую модель
+
                 st.warning("Превышена квота для модели gemini-1.5-flash. Пробуем использовать альтернативную модель.")
                 try:
                     model = genai.GenerativeModel('gemini-pro-vision')
@@ -88,7 +84,6 @@ def chat_eli5(query):
     try:
         eli5_prompt = "Вам необходимо объяснить следующую информацию пятилетнему ребенку. \n" + query
         
-        # Пробуем сначала с более лёгкой моделью
         try:
             model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(eli5_prompt)
@@ -115,7 +110,7 @@ def chat_eli5(query):
         else:
             return f"Произошла ошибка при упрощении объяснения: {error_msg}"
 
-# Интерфейс Streamlit
+
 st.title("Медицинский анализ с использованием Gemini")
 
 with st.expander("О приложении"):
@@ -123,7 +118,7 @@ with st.expander("О приложении"):
 
 uploaded_file = st.file_uploader("Загрузите изображение", type=["jpg", "jpeg", "png"])
 
-# Обработка загруженного файла
+
 if uploaded_file is not None:
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp_file:
         tmp_file.write(uploaded_file.getvalue())
@@ -140,7 +135,6 @@ if st.button('Анализировать изображение'):
         
         if "Превышен лимит запросов API Gemini" in result:
             st.error(result)
-            # Предложение пользователю помощь в решении проблемы
             st.info("""
             ### Решения проблемы с квотой:
             
@@ -151,13 +145,11 @@ if st.button('Анализировать изображение'):
         else:
             st.markdown(result, unsafe_allow_html=True)
         
-        # Удаление временного файла только если он существует
         if os.path.exists(st.session_state['filename']):
             os.unlink(st.session_state['filename'])
 
 # Объяснение ELI5
 if 'result' in st.session_state and st.session_state['result']:
-    # Проверяем, нет ли ошибки квоты в основном результате
     if "Превышен лимит запросов API Gemini" not in st.session_state['result']:
         st.info("Ниже у вас есть возможность получить упрощенное объяснение.")
         if st.radio("ELI5 - Объяснить как пятилетнему", ('Нет', 'Да')) == 'Да':
