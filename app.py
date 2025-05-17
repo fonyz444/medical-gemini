@@ -1,17 +1,21 @@
-
 import streamlit as st
-import base64
 import os
-from dotenv import load_dotenv
 import google.generativeai as genai
 import tempfile
 import PIL.Image
 
-load_dotenv()
+# Получение API ключа из Streamlit secrets
+# Это работает как при локальной разработке (из .streamlit/secrets.toml),
+# так и при деплое на Streamlit Cloud
+try:
+    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+except Exception:
+    # Запасной вариант - проверка переменных окружения
+    # (для обратной совместимости)
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
-    st.error("🔑 API-ключ Gemini не найден. Проверьте файл .env с переменной GOOGLE_API_KEY")
+    st.error("🔑 API-ключ Gemini не найден. Проверьте настройки Streamlit secrets или файл .env с переменной GOOGLE_API_KEY")
     st.stop()
 
 try:
